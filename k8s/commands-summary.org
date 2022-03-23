@@ -1,0 +1,61 @@
+* cheat sheet
+- https://kubernetes.io/docs/reference/kubectl/cheatsheet/
+
+* disk pressure threashold
+- check/edit /etc/kubernetes/kubelet.env
+  KUBELET_ARGS="--cni-bin-dir=/usr/lib/cni --eviction-hard=nodefs.available<2Gi,nodefs.inodesFree<5%"
+
+* adding gdrdrv module
+- sudo su -
+- # cd /root/dump/gdrcopy
+- # ./insmod.sh
+- # lsmod | grep gdr
+  gdrdrv                 24576  0
+  nvidia              34971648  279 nvidia_uvm,gdrdrv,nvidia_modeset
+
+* expose gdrdrv without privileged
+  - https://gitlab.com/arm-research/smarter/smarter-device-manager
+  - kubectl apply -f gdrdrv-configmap.yaml 
+  - kubectl apply -f gdrdrv-daemonset.yaml 
+
+* NVIDIA device plugin for Kubernetes
+- https://github.com/NVIDIA/k8s-device-plugin
+- kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.11.0/nvidia-device-plugin.yml
+
+* GPU discovery
+- https://github.com/NVIDIA/gpu-feature-discovery
+- kubectl apply -f https://raw.githubusercontent.com/NVIDIA/gpu-feature-discovery/v0.5.0/deployments/static/nfd.yaml
+- kubectl apply -f https://raw.githubusercontent.com/NVIDIA/gpu-feature-discovery/v0.5.0/deployments/static/gpu-feature-discovery-daemonset.yaml
+- kubectl apply -f gpu-feature-discovery-job.yaml # (edited with hostname)
+
+* get nodes
+- kubectl get nodes
+- kubectl get nodes --show-labels | less -S
+
+* init/reset flannel pod-network
+- kubectl delete -f kube-flannel.yaml
+- curl https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml > kube-flannel.yaml
+- (change 10.244 -> 10.11 ?)
+- kubectl apply -f kube-flannel.yaml
+
+* deploy mpi pods
+- kubectl apply -f mpi-service.yaml
+- kubectl apply -f mpi-2nodes_2gpu.yaml
+
+* pods (varia)
+- kubectl get pods -o wide
+- kubectl delete -f mpi-2nodes_2gpu.yaml
+- kubectl describe pod gio-mpi-double-0 
+
+* enter pod
+- kubectl exec -ti gio-mpi-double-0  -- fish
+
+* remove taint from tdmnode03
+- kubectl taint node tdmnode03 node-role.kubernetes.io/master:NoSchedule-
+
+* pod-node assignment
+- https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+
+* mounting local path as volume
+- hostPath vs local :: https://kubernetes.io/docs/concepts/storage/volumes/
+

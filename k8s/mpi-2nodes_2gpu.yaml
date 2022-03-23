@@ -1,0 +1,123 @@
+apiVersion: "v1"
+kind: Pod
+metadata:
+  name: gio-mpi-double-0
+  labels:
+    app: mpi
+spec:
+  hostname: gio-mpi-double-0
+  subdomain: mpi
+  terminationGracePeriodSeconds: 0
+  nodeSelector:
+    serv: mpi
+    kubernetes.io/hostname: tdmnode02
+  hostAliases:
+  - ip : "156.148.70.72"
+    hostnames:
+    - "cassandra-db"
+  containers:
+  - name: mpi
+    image: mobydick.crs4.it:5000/mpi
+    imagePullPolicy: IfNotPresent #Always
+    securityContext:
+      #privileged: true
+      capabilities:
+        add: [ "IPC_LOCK", "SYS_RESOURCE" ]
+    resources:
+      limits:
+        cpu: 10
+        nvidia.com/gpu: 1
+        ephemeral-storage: "2000Mi"
+        smarter-devices/gdrdrv: 1
+      requests:
+        cpu: 10
+        smarter-devices/gdrdrv: 1
+    env:
+      - name: NVIDIA_VISIBLE_DEVICES
+        value: GPU-25f0d679-fc2d-ecb9-d9ca-42e85dfe2891,GPU-dcb14055-03ff-f78d-cf8a-649849a44617
+      - name: POD_IP
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+    volumeMounts:
+      - name: giodh
+        mountPath: /DeepHealth
+      - name: cescodata
+        mountPath: /data
+      - name: cescode
+        mountPath: /code
+  volumes:
+  - name: giodh
+    hostPath:
+      path: /home/ldic/busonera/DeepHealth/
+      type: Directory
+  - name: cescodata
+    hostPath:
+      path: /mnt/tdm-dic/users/cesco
+      type: Directory
+  - name: cescode
+    hostPath:
+      path: /mnt/tdm-dic/users/cesco/code
+      type: Directory
+---
+apiVersion: "v1"
+kind: Pod
+metadata:
+  name: gio-mpi-double-1
+  labels:
+    app: mpi
+spec:
+  hostname: gio-mpi-double-1
+  subdomain: mpi
+  terminationGracePeriodSeconds: 0
+  nodeSelector:
+    serv: mpi
+    kubernetes.io/hostname: tdmnode03
+  hostAliases:
+  - ip : "156.148.70.72"
+    hostnames:
+    - "cassandra-db"
+  containers:
+  - name: mpi
+    image: mobydick.crs4.it:5000/mpi
+    imagePullPolicy: IfNotPresent #Always
+    securityContext:
+      #privileged: true
+      capabilities:
+        add: [ "IPC_LOCK", "SYS_RESOURCE" ]
+    resources:
+      limits:
+        cpu: 10
+        nvidia.com/gpu: 1
+        ephemeral-storage: "2000Mi"
+        smarter-devices/gdrdrv: 1
+      requests:
+        cpu: 10
+        smarter-devices/gdrdrv: 1
+    env:
+      - name: NVIDIA_VISIBLE_DEVICES
+        value: GPU-da98a8ad-da83-adf6-82c5-d768416efe47,GPU-403e59bb-851c-76c9-ae40-0c2ed4737a4d
+      - name: POD_IP
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+    volumeMounts:
+      - name: giodh
+        mountPath: /DeepHealth
+      - name: cescodata
+        mountPath: /data
+      - name: cescode
+        mountPath: /code
+  volumes:
+  - name: giodh
+    hostPath:
+      path: /home/ldic/busonera/DeepHealth/
+      type: Directory
+  - name: cescodata
+    hostPath:
+      path: /mnt/tdm-dic/users/cesco
+      type: Directory
+  - name: cescode
+    hostPath:
+      path: /mnt/tdm-dic/users/cesco/code
+      type: Directory
