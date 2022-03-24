@@ -173,6 +173,10 @@ RUN \
     && chmod 700 /home/$USER/.ssh/ \
     && chmod 600 /home/$USER/.ssh/*
 
+RUN \
+    mkdir -p /home/$USER/.config/fish/ \
+    && echo 'set -gx PATH ~/bin $PATH' > /home/$USER/.config/fish/config.fish
+
 RUN chown -R $USER:$USER /home/$USER
 USER $USER
 
