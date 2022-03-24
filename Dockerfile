@@ -161,13 +161,13 @@ USER root
 
 COPY varia/ssh/ /root/.ssh/
 RUN \
-    chown -R root /root/.ssh/ \
+    chown -R root:root /root/.ssh/ \
     && chmod 700 /root/.ssh/ \
     && chmod 600 /root/.ssh/*
 
 COPY varia/ssh/ /home/$USER/.ssh/
 RUN \
-    chown -R $USER /home/$USER/.ssh/ \
+    chown -R $USER:$USER /home/$USER/.ssh/ \
     && chmod 700 /home/$USER/.ssh/ \
     && chmod 600 /home/$USER/.ssh/*
 
