@@ -140,17 +140,20 @@ ENV USER=sgd_mpi
 RUN useradd -m $USER \
     && echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/$USER
 
+USER $USER
 WORKDIR /home/$USER
 COPY varia/utils /home/$USER/utils
-COPY examples /home/$USER/examples
+
 # download and preprocess test datasets
-USER $USER
 RUN sh utils/mnist_download.sh && sh utils/imagenette_download.sh
-USER root
+COPY examples /home/$USER/examples
+RUN sh utils/mnist_symlink.sh
 
 # continue copying
 COPY varia/bin /home/$USER/bin
 COPY opt_mpi /home/$USER/opt_mpi
+
+USER root
 RUN chown -R $USER:$USER /home/$USER
 RUN chmod 755 /home/$USER/bin/*
 
