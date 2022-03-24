@@ -41,15 +41,15 @@ spec:
             fieldPath: status.podIP
     volumeMounts:
       - name: giodh
-        mountPath: /DeepHealth
+        mountPath: /dh-mpi
       - name: cescodata
         mountPath: /data
       - name: cescode
-        mountPath: /code
+        mountPath: /cescode
   volumes:
   - name: giodh
     hostPath:
-      path: /home/ldic/busonera/DeepHealth/
+      path: /home/ldic/busonera/git/dh-mpi/
       type: Directory
   - name: cescodata
     hostPath:
@@ -103,15 +103,15 @@ spec:
             fieldPath: status.podIP
     volumeMounts:
       - name: giodh
-        mountPath: /DeepHealth
+        mountPath: /dh-mpi
       - name: cescodata
         mountPath: /data
       - name: cescode
-        mountPath: /code
+        mountPath: /cescode
   volumes:
   - name: giodh
     hostPath:
-      path: /home/ldic/busonera/DeepHealth/
+      path: /home/ldic/busonera/git/dh-mpi/
       type: Directory
   - name: cescodata
     hostPath:

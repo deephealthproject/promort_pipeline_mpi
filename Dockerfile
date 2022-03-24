@@ -141,8 +141,14 @@ RUN useradd -m $USER \
     && echo "$USER ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/$USER
 
 WORKDIR /home/$USER
-COPY examples /home/$USER/examples
 COPY varia/utils /home/$USER/utils
+COPY examples /home/$USER/examples
+# download and preprocess test datasets
+USER $USER
+RUN sh utils/mnist_download.sh && sh utils/imagenette_download.sh
+USER root
+
+# continue copying
 COPY varia/bin /home/$USER/bin
 COPY opt_mpi /home/$USER/opt_mpi
 RUN chown -R $USER:$USER /home/$USER
@@ -150,14 +156,6 @@ RUN chmod 755 /home/$USER/bin/*
 
 # install OPT_MPI
 RUN pip3 install /home/$USER/opt_mpi
-
-USER $USER
-WORKDIR /home/$USER
-
-# download and preprocess test datasets
-RUN sh utils/mnist_download.sh && sh utils/imagenette_download.sh
-
-USER root
 
 COPY varia/ssh/ /root/.ssh/
 RUN \
