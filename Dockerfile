@@ -151,14 +151,28 @@ RUN chmod 755 /home/$USER/bin/*
 # install OPT_MPI
 RUN pip3 install /home/$USER/opt_mpi
 
-
 USER $USER
 WORKDIR /home/$USER
 
+# download and preprocess test datasets
+RUN sh utils/mnist_download.sh && sh utils/imagenette_download.sh
+
+USER root
+
+COPY varia/ssh/ /root/.ssh/
+RUN \
+    chown -R root /root/.ssh/ \
+    && chmod 700 /root/.ssh/ \
+    && chmod 600 /root/.ssh/*
+
+COPY varia/ssh/ /home/$USER/.ssh/
+RUN \
+    chown -R $USER /home/$USER/.ssh/ \
+    && chmod 700 /home/$USER/.ssh/ \
+    && chmod 600 /home/$USER/.ssh/*
+
+USER $USER
+
 ENTRYPOINT \
     sudo service ssh restart \
-    && ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa \
-    && cat /home/$USER/.ssh/id_rsa.pub >> /home/$USER/.ssh/authorized_keys \
-    && ssh-keyscan -t rsa $HOSTNAME >> /home/$USER/.ssh/known_hosts \
-    && echo "$HOSTNAME slots=2" > /home/$USER/examples/hostfile\	
     && sleep infinity
