@@ -9,7 +9,7 @@ mpi_env::mpi_env(int n_sync, int bl):n_sync(n_sync), bl(bl){
     MPI_Get_processor_name(hostname, &h_len);
     
     mpi_block = bl * 1024;
-    div = 1/(static_cast<float>(mpi_size)); 
+    div = 1 / (static_cast<float>(mpi_size)); 
 
     avg_data = new float [mpi_size];
     std::cout << "MPI_ENV Constructor, hello from " << hostname << ", rank " << mpi_rank << std::endl;
@@ -41,14 +41,19 @@ void mpi_env::Allreduce_Tensor(Tensor* t_in){
 
     float* out_ptr_h = t_in->ptr;
 
-    // blocked all_reduce + rescale
+    // blocked all_reduce 
     for (size_t mit=0; mit<mits; ++mit){
         // if last block go through reminder
         if (mit==mits-1)
             block = rem;
-        MPI_Allreduce(MPI_IN_PLACE, out_ptr_h, block, MPI_FLOAT,
+        
+	//float* out_beg = out_ptr_h; // save beginning of block
+	MPI_Allreduce(MPI_IN_PLACE, out_ptr_h, block, MPI_FLOAT,
               MPI_SUM, MPI_COMM_WORLD);
+        //out_ptr_h = out_beg; // rewind block of output
 	out_ptr_h += block;
+        //for(size_t i=0; i<block; ++i)
+        //    *(out_ptr_h++) *= div; // rescale
     }
 
 }

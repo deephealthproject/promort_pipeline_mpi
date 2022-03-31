@@ -18,7 +18,7 @@ PYBIND11_MODULE(OPT_MPI, m) {
        .def(py::init<mpi_env*, float, float, float, bool>())
        .def("clone", &SGD_mpi::clone)
        .def("applygrads", &SGD_mpi::applygrads)
-       .def("sync_grads", &SGD_mpi::sync_grads);
+       .def("sync_params", &SGD_mpi::sync_params);
     
     py::class_<mpi_env>(m, "mpi_env")
        .def(py::init<int, int>(), py::arg("n_sync")=1, py::arg("bl")=512)
