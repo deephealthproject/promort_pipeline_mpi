@@ -27,7 +27,7 @@ spec:
       limits:
         cpu: 10
         nvidia.com/gpu: 1
-        ephemeral-storage: "2000Mi"
+        ephemeral-storage: "5000Mi"
         smarter-devices/gdrdrv: 1
       requests:
         cpu: 10
@@ -89,7 +89,7 @@ spec:
       limits:
         cpu: 10
         nvidia.com/gpu: 1
-        ephemeral-storage: "2000Mi"
+        ephemeral-storage: "5000Mi"
         smarter-devices/gdrdrv: 1
       requests:
         cpu: 10
