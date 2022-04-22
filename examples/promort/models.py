@@ -19,11 +19,20 @@
 # SOFTWARE.
 
 import pyeddl.eddl as eddl
+###
+def init_top_layers(net):
+    lays = net.layers
+    for i, l in enumerate(lays):
+        if l.name == 'top':
+            for ltop in lays[i:]:
+                ltop.initialize()
+            break
 
+### VGG16
 
-def VGG16_promort(in_layer, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
-    x = in_layer
-    x = eddl.ReLu(init(eddl.Conv(x, 64, [3, 3]), seed))
+def VGG16_tumor(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
+    in_  = eddl.Input(in_shape)
+    x = eddl.ReLu(init(eddl.Conv(in_, 64, [3, 3]), seed))
     x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 64, [3, 3]), seed)), [2, 2], [2, 2])
     x = eddl.ReLu(init(eddl.Conv(x, 128, [3, 3]), seed))
     x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 128, [3, 3]), seed)), [2, 2], [2, 2])
@@ -44,12 +53,49 @@ def VGG16_promort(in_layer, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=N
         x = eddl.L2(x, l2_reg)
     x = eddl.ReLu(init(x,seed))
     x = eddl.Softmax(eddl.Dense(x, num_classes))
-    return x
+    
+    net = eddl.Model([in_], [x])
+
+    return net
+
+def VGG16_gleason(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
+    in_ = eddl.Input(in_shape)
+    x = eddl.ReLu(init(eddl.Conv(in_, 64, [3, 3]), seed))
+    x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 64, [3, 3]), seed)), [2, 2], [2, 2])
+    x = eddl.ReLu(init(eddl.Conv(x, 128, [3, 3]), seed))
+    x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 128, [3, 3]), seed)), [2, 2], [2, 2])
+    x = eddl.ReLu(init(eddl.Conv(x, 256, [3, 3]), seed))
+    x = eddl.ReLu(init(eddl.Conv(x, 256, [3, 3]), seed))
+    x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 256, [3, 3]), seed)), [2, 2], [2, 2])
+    x = eddl.ReLu(init(eddl.Conv(x, 512, [3, 3]), seed))
+    x = eddl.ReLu(init(eddl.Conv(x, 512, [3, 3]), seed))
+    x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 512, [3, 3]), seed)), [2, 2], [2, 2])
+    x = eddl.ReLu(init(eddl.Conv(x, 512, [3, 3]), seed))
+    x = eddl.ReLu(init(eddl.Conv(x, 512, [3, 3]), seed))
+    x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 512, [3, 3]), seed)), [2, 2], [2, 2])
+    x = eddl.Reshape(x, [-1])
+    x = eddl.Dense(x, 2048)
+    if dropout:
+        x = eddl.Dropout(x, dropout, iw=False)
+    if l2_reg:
+        x = eddl.L2(x, l2_reg)
+    x = eddl.ReLu(init(x,seed))
+    x = eddl.Dense(x, 1024)
+    if dropout:
+        x = eddl.Dropout(x, dropout, iw=False)
+    if l2_reg:
+        x = eddl.L2(x, l2_reg)
+    x = eddl.ReLu(init(x,seed))
+    x = eddl.Softmax(eddl.Dense(x, num_classes))
+
+    net = eddl.Model([in_], [x])
+
+    return net
 
 
-def VGG16(in_layer, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
-    x = in_layer
-    x = eddl.ReLu(init(eddl.Conv(x, 64, [3, 3]), seed))
+def VGG16(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
+    in_ = eddl.Input(in_shape)
+    x = eddl.ReLu(init(eddl.Conv(in_, 64, [3, 3]), seed))
     x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 64, [3, 3]), seed)), [2, 2], [2, 2])
     x = eddl.ReLu(init(eddl.Conv(x, 128, [3, 3]), seed))
     x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 128, [3, 3]), seed)), [2, 2], [2, 2])
@@ -76,22 +122,35 @@ def VGG16(in_layer, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dro
         x = eddl.L2(x, l2_reg)
     x = eddl.ReLu(init(x,seed))
     x = eddl.Softmax(eddl.Dense(x, num_classes))
-    return x
 
-
-def tissue_detector_DNN():
-    in_ = eddl.Input([3])
-
-    layer = in_
-    layer = eddl.ReLu(eddl.Dense(layer, 50))
-    layer = eddl.ReLu(eddl.Dense(layer, 50))
-    layer = eddl.ReLu(eddl.Dense(layer, 50))
-    out = eddl.Softmax(eddl.Dense(layer, 2))
-    net = eddl.Model([in_], [out])
+    net = eddl.Model([in_], [x])
 
     return net
 
-#### Resnet50 
+def VGG16_GAP(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
+    in_ = eddl.Input(in_shape)
+    x = eddl.ReLu(init(eddl.Conv(in_, 64, [3, 3]), seed))
+    x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 64, [3, 3]), seed)), [2, 2], [2, 2])
+    x = eddl.ReLu(init(eddl.Conv(x, 128, [3, 3]), seed))
+    x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 128, [3, 3]), seed)), [2, 2], [2, 2])
+    x = eddl.ReLu(init(eddl.Conv(x, 256, [3, 3]), seed))
+    x = eddl.ReLu(init(eddl.Conv(x, 256, [3, 3]), seed))
+    x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 256, [3, 3]), seed)), [2, 2], [2, 2])
+    x = eddl.ReLu(init(eddl.Conv(x, 512, [3, 3]), seed))
+    x = eddl.ReLu(init(eddl.Conv(x, 512, [3, 3]), seed))
+    x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 512, [3, 3]), seed)), [2, 2], [2, 2])
+    x = eddl.ReLu(init(eddl.Conv(x, 512, [3, 3]), seed))
+    x = eddl.ReLu(init(eddl.Conv(x, 512, [3, 3]), seed))
+    x = eddl.ReLu(init(eddl.Conv(x, 512, [3, 3]), seed))
+    x = eddl.GlobalAveragePool(x)
+    x = eddl.Reshape(x, [-1])
+    x = eddl.Softmax(eddl.Dense(x, num_classes))
+
+    net = eddl.Model([in_], [x])
+
+    return net
+
+#### Resnet50 from scratch 
 
 def block1(x, filters, kernel_size=3, stride=1, conv_shortcut=True, name=None):
   """A residual block.
@@ -145,8 +204,9 @@ def stack1(x, filters, blocks, stride1=2, name=None):
   return x
 
 
-def ResNet50(x, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
-    x = eddl.Pad(x, [3, 3, 3, 3])
+def ResNet50(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
+    in_ = eddl.Input(in_shape)
+    x = eddl.Pad(in_, [3, 3, 3, 3])
     x = eddl.ReLu(eddl.BatchNormalization(eddl.Conv(x, 64, [7, 7], [2, 2], "valid", False), True))
     x = eddl.Pad(x, [1, 1, 1, 1])
     x = eddl.MaxPool(x, [3, 3], [2, 2], "valid")
@@ -156,8 +216,177 @@ def ResNet50(x, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout
     x = stack1(x, 256, 6, name='conv4')
     x = stack1(x, 512, 3, name='conv5')
     
-    x = eddl.AveragePool(x, [7,7], [1, 1])
+    x = eddl.GlobalAveragePool(x)
     x = eddl.Reshape(x, [-1])
     x = eddl.Softmax(eddl.Dense(x, num_classes))
+    
+    net = eddl.Model([in_], [x])
 
-    return x
+    return net
+
+### Preinitialized ONNX Networks with Imagenet. Preprocessing is the same used on pytorch vision models
+
+def ResNet18_onnx(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None, top=False):
+    resnet = eddl.download_resnet18(top=top, input_shape=in_shape) # Remove the Dense layer 
+    in_ = resnet.layers[0]
+    x = resnet.layers[-1]
+    
+    if top:
+        if dropout:
+            x = eddl.Dropout(x, dropout, iw=False)
+        if l2_reg:
+            x = eddl.L2(x, l2_reg) 
+        x = eddl.Dense(x, num_classes)
+
+    out = eddl.Softmax(x)
+    
+    net = eddl.Model([in_], [out])
+    
+    ## If the top of the pretrained network is replaced, initialize it
+    if top:
+        init_top_layers(net)
+    
+    return net
+
+def ResNet34_onnx(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None, top=False):
+    resnet = eddl.download_resnet34(top=top, input_shape=in_shape) # Remove the Dense layer 
+    in_ = resnet.layers[0]
+    x = resnet.layers[-1]
+    
+    if top:
+        if dropout:
+            x = eddl.Dropout(x, dropout, iw=False)
+        if l2_reg:
+            x = eddl.L2(x, l2_reg)
+        x = eddl.Dense(x, num_classes)
+        
+    out = eddl.Softmax(x)
+    
+    net = eddl.Model([in_], [out])
+    
+    ## If the top of the pretrained network is replaced, initialize it
+    if top:
+        init_top_layers(net)
+    
+    return net
+
+def ResNet50_onnx(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None, top=False):
+    resnet = eddl.download_resnet50(top=top, input_shape=in_shape) # Remove the Dense layer 
+    in_ = resnet.layers[0]
+    x = resnet.layers[-1]
+    
+    if top:
+        if dropout:
+            x = eddl.Dropout(x, dropout, iw=False)
+        if l2_reg:
+            x = eddl.L2(x, l2_reg)
+        x = eddl.Dense(x, num_classes)
+        
+    out = eddl.Softmax(x)
+    
+    net = eddl.Model([in_], [out])
+    
+    ## If the top of the pretrained network is replaced, initialize it
+    if top:
+        init_top_layers(net)
+    
+    return net
+
+
+### ONNX Preinitialized VGG16 with Imagenet
+
+def VGG16_onnx(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None, top=False):
+    vgg16 = eddl.download_vgg16(top=top, input_shape=in_shape) # top=True remove the imagenet trained top layer
+    in_ = vgg16.layers[0]
+    x = vgg16.layers[-1]
+    
+    if top:
+        x = eddl.Dense(x, 4096)
+        if dropout:
+            x = eddl.Dropout(x, dropout, iw=False)
+        if l2_reg:
+            x = eddl.L2(x, l2_reg)
+        x = eddl.ReLu(init(x,seed))
+        x = eddl.Dense(x, 4096)
+        if dropout:
+            x = eddl.Dropout(x, dropout, iw=False)
+        if l2_reg:
+            x = eddl.L2(x, l2_reg)
+        x = eddl.ReLu(init(x,seed))
+        x = eddl.Dense(x, num_classes)
+        
+    out = eddl.Softmax(x)
+    
+    net = eddl.Model([in_], [out])
+    
+    ## If the top of the pretrained network is replaced, initialize it
+    if top:
+        init_top_layers(net)
+        
+    return net
+
+
+### DNN for tissue detection
+
+def tissue_detector_DNN():
+    in_ = eddl.Input([3])
+
+    layer = in_
+    layer = eddl.ReLu(eddl.Dense(layer, 50))
+    layer = eddl.ReLu(eddl.Dense(layer, 50))
+    layer = eddl.ReLu(eddl.Dense(layer, 50))
+    out = eddl.Softmax(eddl.Dense(layer, 2))
+    net = eddl.Model([in_], [out])
+
+    return net
+
+
+### Main Function to build the preferred network
+def get_net(net_name='vgg16', in_shape=[3,256,256], num_classes=2, full_mem=True, net_init='he', dropout=None, l2_reg=None):
+    ### mem
+    if full_mem:
+        mem = 'full_mem'
+    else:
+        mem = 'low_mem'
+
+    ### Get Network
+    if net_init == 'he':
+        net_init = eddl.HeNormal
+    elif net_init == 'glorot':
+        net_init = eddl.GlorotNormal
+
+    ## Network definition
+    build_init_weights = True
+    if net_name == 'vgg16_tumor':
+        net = VGG16_tumor(in_shape, num_classes, init=net_init, l2_reg=l2_reg, dropout=dropout)
+    elif net_name == 'vgg16_gleason':
+        net = VGG16_gleason(in_shape, num_classes, init=net_init, l2_reg=l2_reg, dropout=dropout)
+    elif net_name == 'vgg16_gap':
+        net = VGG16_GAP(in_shape, num_classes, init=net_init, l2_reg=l2_reg, dropout=dropout)
+    elif net_name == 'vgg16':
+        net = VGG16(in_shape, num_classes, init=net_init, l2_reg=l2_reg, dropout=dropout)
+    elif net_name == 'resnet50':
+        net = ResNet50(in_shape, num_classes, init=net_init, l2_reg=l2_reg, dropout=dropout)
+    elif net_name == 'resnet18_onnx':
+        net = ResNet18_onnx(in_shape, num_classes, init=net_init, l2_reg=l2_reg, dropout=dropout, top=True)
+        build_init_weights = False
+    elif net_name == 'resnet34_onnx':
+        net = ResNet34_onnx(in_shape, num_classes, init=net_init, l2_reg=l2_reg, dropout=dropout, top=True)
+        build_init_weights = False
+    elif net_name == 'resnet50_onnx':
+        net = ResNet50_onnx(in_shape, num_classes, init=net_init, l2_reg=l2_reg, dropout=dropout, top=True)
+        build_init_weights = False
+    elif net_name == 'vgg16_onnx':
+        net = VGG16_onnx(in_shape, num_classes, init=net_init, l2_reg=l2_reg, dropout=dropout, top=True)
+        build_init_weights = False
+    elif net_name == 'resnet50_onnx_imagenet':
+        net = ResNet50_onnx(in_shape, num_classes, init=net_init, l2_reg=l2_reg, dropout=dropout)
+        build_init_weights = False
+    elif net_name == 'vgg16_onnx_imagenet':
+        net = VGG16_onnx(in_shape, num_classes, init=net_init, l2_reg=l2_reg, dropout=dropout)
+        build_init_weights = False
+    else:
+        return None
+    print (build_init_weights)
+    
+    return net, build_init_weights

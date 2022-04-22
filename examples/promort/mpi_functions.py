@@ -1,5 +1,8 @@
+from cassandradl import CassandraDataset
 from cassandra.auth import PlainTextAuthProvider
-from cassandra_dataset import CassandraDataset
+from getpass import getpass
+from pathlib import Path
+
 import time
 from tqdm import trange, tqdm
 import numpy as np
@@ -9,7 +12,7 @@ from pyeddl.tensor import Tensor
 import random
 import pickle, os
 
-def train(el, init_weights_fn, epochs, lr, gpus, dropout, l2_reg, seed, out_dir):
+def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir):
     
     MP = el.MP
     rank = MP.mpi_rank
@@ -26,10 +29,6 @@ def train(el, init_weights_fn, epochs, lr, gpus, dropout, l2_reg, seed, out_dir)
     t1 = time.time()
     print("Time to load the Environment  %.3f" % (t1-t0))
     t0 = t1
-
-    # Loading model weights if any
-    if init_weights_fn:
-        eddl.load(net, init_weights_fn)
 
     ###################
     ## Training step ##
@@ -60,7 +59,9 @@ def train(el, init_weights_fn, epochs, lr, gpus, dropout, l2_reg, seed, out_dir)
     val_num_batches = min(cd.num_batches[el.num:el.num*2]) - 1 # FIXME: Using the minimum among all batches not the local ones
     
     print ("NUM BATCHES %r" % cd.num_batches)
-    
+    print(tr_num_batches)
+    print(val_num_batches)
+     
     for e in range(epochs):
         ####
         ### Training 
@@ -74,9 +75,10 @@ def train(el, init_weights_fn, epochs, lr, gpus, dropout, l2_reg, seed, out_dir)
 
         ### Recreate splits to shuffle among workers but with the same seed to get same splits
         eddl.reset_loss(net)
-        seed = random.getrandbits(32)
+        #seed = random.getrandbits(32)
+        
         cd.mix_splits(train_splits_l)
-    
+        
         pbar = tqdm(range(tr_num_batches))
         
         for b_index, mb in enumerate(pbar):
@@ -101,7 +103,7 @@ def train(el, init_weights_fn, epochs, lr, gpus, dropout, l2_reg, seed, out_dir)
             acc = MP.Gather_and_average(acc)
             
             if rank == 0:
-                msg = "Epoch {:d}/{:d} (batch {:d}/{:d}) - loss: {:.3f}, acc: {:.3f}".format(e + 1, epochs, tr_num_batches + 1, b_index, loss, acc)
+                msg = "Epoch {:d}/{:d} (batch {:d}/{:d}) - loss: {:.3f}, acc: {:.3f}".format(e + 1, epochs, b_index, tr_num_batches + 1, loss, acc)
                 pbar.set_postfix_str(msg)
                 epoch_loss_l.append(loss)
                 epoch_acc_l.append(acc)
@@ -163,7 +165,7 @@ def train(el, init_weights_fn, epochs, lr, gpus, dropout, l2_reg, seed, out_dir)
                 # Only rank 0 print progression bar
                 epoch_val_loss_l.append(loss)
                 epoch_val_acc_l.append(acc)
-                msg = "Epoch {:d}/{:d} (batch {:d}/{:d}) - loss: {:.3f}, acc: {:.3f}".format(e + 1, epochs, val_num_batches + 1, b_index, loss, acc)
+                msg = "Epoch {:d}/{:d} (batch {:d}/{:d}) - loss: {:.3f}, acc: {:.3f}".format(e + 1, epochs, b_index, val_num_batches + 1, loss, acc)
                 pbar.set_postfix_str(msg)
             
         ## End of macro batches

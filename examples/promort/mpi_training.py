@@ -17,12 +17,14 @@ from OPT_MPI import mpi_env
 # mpirun --mca btl tcp,self --bind-to none --mca btl_base_verbose 30 -n 2 --hostfile tmp/hostfile  python3 mpi_training.py --ltr 1 --epochs 2 --sync-iterations 2 --batch-size 32 --num-classes 1000 --lr 1e-6 --cass-row-fn /data/code/tmp/inet_256_rows.pckl
 
 def run(args):
-    try:
-        from private_data import inet_pass
-    except ImportError:
-        inet_pass = getpass('Insert Cassandra password: ')
+    cassandra_pwd_fn = args.cassandra_pwd_fn
+    if not cassandra_pwd_fn:
+        cass_pass = getpass('Insert Cassandra password: ')
+    else:
+        with open(cassandra_pwd_fn) as fd:
+            cass_pass = fd.readline().rstrip()
 
-    
+
     init_weights_fn = args.init_weights_fn
     # Parse GPU
     if args.gpu:
@@ -36,6 +38,7 @@ def run(args):
     augs_on = args.augs_on
     batch_size = args.batch_size
     num_classes = args.num_classes
+    label = args.label
     dropout = args.dropout
     l2_reg = args.l2_reg
     max_patches = args.max_patches
@@ -52,18 +55,17 @@ def run(args):
     net_init = 'HeNormal'
     
     ## Each node gets its own environment
-    
-    el = EnvLoader(inet_pass, n_sync, val_ratio, test_ratio, augs_on, batch_size, max_patches,
+    el = EnvLoader(cass_pass, n_sync, val_ratio, test_ratio, augs_on, batch_size, max_patches,
                                    cass_row_fn, cass_datatable,
-                                   net_name, size, num_classes,
+                                   net_name, size, num_classes, label,
                                    lr, gpus, net_init,
-                                   dropout, l2_reg, seed)
+                                   dropout, l2_reg, seed, init_weights_fn)
 
     #########################
     ### Start parallel job ##
     #########################
     
-    results = train(el, init_weights_fn, epochs, lr, gpus, dropout, l2_reg, seed, out_dir)    
+    results = train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir)    
 
     loss_l, acc_l, val_loss_l, val_acc_l = results
    
@@ -87,18 +89,19 @@ if __name__ == "__main__":
     parser.add_argument("--max-patches", type=int, metavar="INT",
                         default=1300000, help='Number of patches to use for all splits')
     parser.add_argument("--patch-size", type=int, metavar="INT",
-                        default=224, help='Patch side size')
+                        default=256, help='Patch side size')
     parser.add_argument("--patience", type=int, metavar="INT", default=20,
                         help='Number of epochs after which the training is stopped if validation accuracy does not improve (delta=0.001)')
     parser.add_argument("--batch-size", type=int,
                         metavar="INT", default=32, help='Batch size')
     parser.add_argument("--num-classes", type=int,
-                        metavar="INT", default=1000, help='Number of classes')
+                        metavar="INT", default=2, help='Number of classes')
+    parser.add_argument("--label", default='tumnorm_label')
     parser.add_argument("--val-ratio", type=float, default=0.0,
                         help='Validation split ratio')
     parser.add_argument("--test-ratio", type=float, default=0.0,
                         help='Test split ratio')
-    parser.add_argument("--seed", type=int, metavar="INT", default=None,
+    parser.add_argument("--seed", type=int, metavar="INT", default=1234,
                         help='Seed of the random generator to manage data load')
     parser.add_argument("--lr", type=float, metavar="FLOAT",
                         default=1e-5, help='Learning rate')
@@ -120,4 +123,6 @@ if __name__ == "__main__":
     parser.add_argument("--cass-datatable", metavar="DIR", required=True, help="Name of cassandra datatable")
     parser.add_argument("--net-name",
                         default='resnet50',  help="Select a model between resnet50 and vgg16")
+    parser.add_argument("--cassandra-pwd-fn", metavar="STR", default='/tmp/cassandra_pass.txt',
+                        help="cassandra password")
     run(parser.parse_args())
