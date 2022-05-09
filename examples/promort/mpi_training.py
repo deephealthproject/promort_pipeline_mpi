@@ -10,6 +10,8 @@ import os
 import random
 import pickle
 import sys
+import copy
+import json 
 
 from OPT_MPI import mpi_env
 
@@ -53,31 +55,47 @@ def run(args):
     val_ratio = args.val_ratio
     test_ratio = args.test_ratio
     net_init = 'HeNormal'
-    
+    save_weights = args.save_weights
+    find_opt_lr = args.find_opt_lr
+
     ## Each node gets its own environment
     el = EnvLoader(cass_pass, n_sync, val_ratio, test_ratio, augs_on, batch_size, max_patches,
                                    cass_row_fn, cass_datatable,
                                    net_name, size, num_classes, label,
                                    lr, gpus, net_init,
                                    dropout, l2_reg, seed, init_weights_fn)
+    
+    rank = el.MP.mpi_rank
+        
+    if rank == 0:
+        if out_dir:
+            conf_dict = copy.copy(args.__dict__)
+            cwd = os.getcwd()
+            conf_dict['cwd'] = cwd
+
+            conf_fn = os.path.join(out_dir, 'conf.json')
+            with open(conf_fn, 'w') as f:
+                json.dump(conf_dict, f, indent=2)
 
     #########################
     ### Start parallel job ##
     #########################
     
-    results = train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir)    
+    results = train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir, save_weights, find_opt_lr)    
 
-    loss_l, acc_l, val_loss_l, val_acc_l = results
+    loss_l, acc_l, val_loss_l, val_acc_l, ts_l, val_ts_l, start_time = results
    
-    rank = el.MP.mpi_rank
     if rank == 0:
         if out_dir:
             # Store loss, metrics timeseries and weights
             history = {'loss': loss_l, 'acc': acc_l,
-                       'val_loss': val_loss_l, 'val_acc': val_acc_l}
+                       'val_loss': val_loss_l, 'val_acc': val_acc_l,
+                       'ts': ts_l, 'val_ts': val_ts_l, 'start_time': start_time}
             pickle.dump(history, open(os.path.join(
                 out_dir, 'history.pickle'), 'wb'))
-            # Store weights
+            # Store conf
+            
+
 
 
 if __name__ == "__main__":
@@ -105,6 +123,7 @@ if __name__ == "__main__":
                         help='Seed of the random generator to manage data load')
     parser.add_argument("--lr", type=float, metavar="FLOAT",
                         default=1e-5, help='Learning rate')
+    parser.add_argument("--find-opt-lr", action="store_true", help='Scan learning rate with an increasing exponential law to find best lr')
     parser.add_argument("--dropout", type=float, metavar="FLOAT",
                         default=None, help='Float value (0-1) to specify the dropout ratio')
     parser.add_argument("--l2-reg", type=float, metavar="FLOAT",

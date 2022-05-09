@@ -11,11 +11,13 @@ import pyeddl.eddl as eddl
 from pyeddl.tensor import Tensor
 import random
 import pickle, os
+import datetime
 
-def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir):
+def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir, save_weights, find_opt_lr=False):
     
     MP = el.MP
     rank = MP.mpi_rank
+    mpi_size = MP.mpi_size
 
     print('Starting train function')
     t0 = time.time()
@@ -41,7 +43,9 @@ def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir):
         acc_l = []
         val_loss_l = []
         val_acc_l = []
-        
+        ts_l = []
+        val_ts_l = []
+            
         patience_cnt = 0
         val_acc_max = 0.0
 
@@ -61,11 +65,28 @@ def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir):
     print ("NUM BATCHES %r" % cd.num_batches)
     print(tr_num_batches)
     print(val_num_batches)
-     
+    
+    start_time = datetime.datetime.now()
+
+
+    #### Code used to find best learning rate. Comment it to perform an actual training
+    if find_opt_lr:
+        max_epochs = epochs
+        lr_start = lr
+        lr_end = lr * 1.0e4
+        lr_f = lambda x: 10**(np.log10(lr_start) + ((np.log10(lr_end)-np.log10(lr_start))/max_epochs)*x)
+    ####
+
     for e in range(epochs):
         ####
         ### Training 
         ####
+
+        ## SET LT
+        if find_opt_lr:
+            print (f"SETTING A NEW LR: {lr_f(e)}")
+            eddl.setlr(net, [lr_f(e)])
+          
         if rank == 0:
             print ("\n\n\n*** Training ***")
             epoch_acc_l = []
@@ -79,9 +100,10 @@ def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir):
         
         cd.mix_splits(train_splits_l)
         
-        pbar = tqdm(range(tr_num_batches))
-        
-        for b_index, mb in enumerate(pbar):
+        #pbar = tqdm(range(tr_num_batches))
+        pbar = tqdm(range(tr_num_batches * mpi_size))
+
+        for b_index in range(tr_num_batches):
             # Init local weights to a zero structure equal in size and shape to the global one
             t0 = time.time()
             split_index = rank # Local split. If ltr == 1 --> split_index = rank
@@ -107,10 +129,15 @@ def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir):
                 pbar.set_postfix_str(msg)
                 epoch_loss_l.append(loss)
                 epoch_acc_l.append(acc)
-            
+         
+            pbar.update(mpi_size)
+
         ## End of macro batches
         pbar.close()
         
+        # Store train epoch datetime
+        train_datetime = datetime.datetime.now()
+
         ######
         ## Validation 
         ######
@@ -125,9 +152,11 @@ def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir):
         epoch_val_acc_l = []
         epoch_val_loss_l = []
         
-        pbar = tqdm(range(val_num_batches))
+        #pbar = tqdm(range(val_num_batches))
+        pbar = tqdm(range(val_num_batches * mpi_size))
         
-        for b_index, mb in enumerate(pbar):
+        #for b_index, mb in enumerate(pbar):
+        for b_index in range(val_num_batches):
             # Init local weights to a zero structure equal in size and shape to the global one
             t0 = time.time()
             split_index = el.num + rank # Local validation split
@@ -167,24 +196,33 @@ def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir):
                 epoch_val_acc_l.append(acc)
                 msg = "Epoch {:d}/{:d} (batch {:d}/{:d}) - loss: {:.3f}, acc: {:.3f}".format(e + 1, epochs, b_index, val_num_batches + 1, loss, acc)
                 pbar.set_postfix_str(msg)
-            
+                
+            pbar.update(mpi_size)
+
         ## End of macro batches
         pbar.close()
         
+        # Store validation epoch datetime
+        val_datetime = datetime.datetime.now()
+
         # Compute Epoch loss and acc and store history
         if rank == 0:
             loss_l.append(np.mean(epoch_loss_l))
             acc_l.append(np.mean(epoch_acc_l))
             val_loss_l.append(np.mean(epoch_val_loss_l))
             val_acc_l.append(np.mean(epoch_val_acc_l))
-
+            ts_l.append(train_datetime)
+            val_ts_l.append(val_datetime)
             if out_dir:
-                history = {'loss': loss_l, 'acc': acc_l, 'val_loss': val_loss_l, 'val_acc': val_acc_l}
+                history = {'loss': loss_l, 'acc': acc_l, 'val_loss': val_loss_l, 'val_acc': val_acc_l, 'start_time': start_time, 'ts':ts_l, 'val_ts': val_ts_l}
                 pickle.dump(history, open(os.path.join(out_dir, 'history.pickle'), 'wb'))
+                if save_weights:
+                    path = os.path.join(out_dir, "weights_ep_%s_vacc_%.2f.bin" % (e, val_acc_l[-1]))
+                    eddl.save(net, path, "bin")
         
 
     ## End of Epochs
     if rank == 0:
-        return loss_l, acc_l, val_loss_l, val_acc_l
+        return loss_l, acc_l, val_loss_l, val_acc_l, ts_l, val_ts_l, start_time
     else:
-        return None, None, None, None
+        return None, None, None, None, None, None, None
