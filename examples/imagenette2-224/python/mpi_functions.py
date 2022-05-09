@@ -36,6 +36,31 @@ def accuracy(predictions, targets, epsilon=1e-12):
     ce = np.sum((targets * predictions) + 1e-9) / N
     return ce
 
+def transform_tensor_pytorch(x_t):
+    # Pytorch
+    # Tensor to numpy array
+    x = x_t.getdata()
+
+    # BGR to RGB
+    x = x[::-1, :, :] ## RGB -> BGR
+
+    # rescale in [0:1]
+    x *= 1./255
+
+    # Standardization of the tensor
+    mean = np.array([0.485, 0.456, 0.406])
+    std = np.array([0.229, 0.224, 0.225])
+
+    x[:, 0, :, :] -= mean[0]
+    x[:, 1, :, :] -= mean[1]
+    x[:, 2, :, :] -= mean[2]
+
+    x[:, 0, :, :] /= std[0]
+    x[:, 1, :, :] /= std[1]
+    x[:, 2, :, :] /= std[2]
+
+    return Tensor(x)
+
 def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir):
     
     MP = el.MP
@@ -121,6 +146,7 @@ def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir):
             #print (f'load time: {t1-t0}')
 
             x.div_(255.0)
+            #x = transform_tensor_pytorch(x)
             tx, ty = [x], [y]
                     
             #print (f'Train batch rank: {rank}, ep: {e}, macro_batch: {mb}, local training rank: {lt}, inidipendent iteration: {s_it}') 
@@ -131,8 +157,8 @@ def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir):
             acc = eddl.get_metrics(net)[0]
         
             # Loss and accuracy synchronization among ranks
-            loss = MP.Gather_and_average(loss)
-            acc = MP.Gather_and_average(acc)
+            #loss = MP.Gather_and_average(loss)
+            #acc = MP.Gather_and_average(acc)
             
             if rank == 0:
                 msg = "Epoch {:d}/{:d} - loss: {:.3f}, acc: {:.3f}".format(e + 1, epochs, loss, acc)

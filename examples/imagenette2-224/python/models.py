@@ -20,8 +20,16 @@
 
 import pyeddl.eddl as eddl
 
-def VGG16(in_layer, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
-    x = in_layer
+def init_top_layers(net):
+    lays = net.layers
+    for i, l in enumerate(lays):
+        if l.name == 'top':
+            for ltop in lays[i:]:
+                ltop.initialize()
+            break
+
+def VGG16(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
+    in_  = eddl.Input(in_shape)
     x = eddl.ReLu(init(eddl.Conv(x, 64, [3, 3]), seed))
     x = eddl.MaxPool(eddl.ReLu(init(eddl.Conv(x, 64, [3, 3]), seed)), [2, 2], [2, 2])
     x = eddl.ReLu(init(eddl.Conv(x, 128, [3, 3]), seed))
@@ -49,7 +57,7 @@ def VGG16(in_layer, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dro
         x = eddl.L2(x, l2_reg)
     x = eddl.ReLu(init(x,seed))
     x = eddl.Softmax(eddl.Dense(x, num_classes))
-    return x
+    return in_, x
 
 
 def tissue_detector_DNN():
@@ -118,7 +126,8 @@ def stack1(x, filters, blocks, stride1=2, name=None):
   return x
 
 
-def ResNet50(x, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
+def ResNet50(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
+    in_  = eddl.Input(in_shape)
     x = eddl.Pad(x, [3, 3, 3, 3])
     x = eddl.ReLu(eddl.BatchNormalization(eddl.Conv(x, 64, [7, 7], [2, 2], "valid", False), True))
     x = eddl.Pad(x, [1, 1, 1, 1])
@@ -133,4 +142,56 @@ def ResNet50(x, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout
     x = eddl.Reshape(x, [-1])
     x = eddl.Softmax(eddl.Dense(x, num_classes))
 
-    return x
+    return in_, x
+
+def ResNet50_onnx(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
+    resnet = eddl.download_resnet50(top=True, input_shape=in_shape)
+    in_ = resnet.layers[0]
+    x = resnet.layers[-1]
+    x = eddl.Softmax(eddl.Dense(x, num_classes))
+    return in_, x
+
+def VGG16_onnx(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None):
+    vgg16 = eddl.download_vgg16(top=True, input_shape=in_shape) # Remove top layers
+    in_ = vgg16.layers[0]
+    x = vgg16.layers[-1]
+
+    x = eddl.Dense(x, 4096)
+    if dropout:
+        x = eddl.Dropout(x, dropout, iw=False)
+    if l2_reg:
+        x = eddl.L2(x, l2_reg)
+    x = eddl.ReLu(init(x,seed))
+    x = eddl.Dense(x, 4096)
+    if dropout:
+        x = eddl.Dropout(x, dropout, iw=False)
+    if l2_reg:
+        x = eddl.L2(x, l2_reg)
+    x = eddl.ReLu(init(x,seed))
+    x = eddl.Softmax(eddl.Dense(x, num_classes))
+
+    return in_, x
+
+
+def ResNet18_onnx(in_shape, num_classes, seed=1234, init=eddl.HeNormal, l2_reg=None, dropout=None, top=True):
+    resnet = eddl.download_resnet18(top=top, input_shape=in_shape) # Remove the Dense layer 
+    in_ = resnet.layers[0]
+    x = resnet.layers[-1]
+    
+    if top:
+        if dropout:
+            x = eddl.Dropout(x, dropout, iw=False)
+        if l2_reg:
+            x = eddl.L2(x, l2_reg) 
+        x = eddl.Dense(x, num_classes)
+
+    out = eddl.Softmax(x)
+    
+    #net = eddl.Model([in_], [out])
+    
+    ## If the top of the pretrained network is replaced, initialize it
+    #if top:
+    #    init_top_layers(net)
+    
+    return in_, out
+
