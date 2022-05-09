@@ -121,7 +121,7 @@ class EnvLoader():
             yaml.dump(yaml_tmp, open(out_fn, 'w'))
 
     def net_setup(self):
-        in_ = eddl.Input([3, self.size[0], self.size[1]])
+        in_shape = [3, self.size[0], self.size[1]]
         # set net init
         if (self.net_init=='HeNormal'):
             net_init = eddl.HeNormal
@@ -132,11 +132,23 @@ class EnvLoader():
         # set network
         if self.net_name == 'vgg16':
             print ('vgg16')
-            out = models.VGG16(in_, self.num_classes, init=net_init,
+            in_, out = models.VGG16(in_shape, self.num_classes, init=net_init,
                                l2_reg=self.l2_reg, dropout=self.dropout)
         elif self.net_name == 'resnet50':
             print ('resnet50')
-            out = models.ResNet50(in_, self.num_classes, init=net_init,
+            in_, out = models.ResNet50(in_shape, self.num_classes, init=net_init,
+                               l2_reg=self.l2_reg, dropout=self.dropout)
+        elif self.net_name == 'resnet50_onnx':
+            print ('resnet50_onnx')
+            in_, out = models.ResNet50_onnx(in_shape, self.num_classes, init=net_init,
+                               l2_reg=self.l2_reg, dropout=self.dropout)
+        elif self.net_name == 'resnet18_onnx':
+            print ('resnet18_onnx')
+            in_, out = models.ResNet18_onnx(in_shape, self.num_classes, init=net_init,
+                               l2_reg=self.l2_reg, dropout=self.dropout)
+        elif self.net_name == 'vgg16_onnx':
+            print ('vgg16_onnx')
+            in_, out = models.VGG16_onnx(in_shape, self.num_classes, init=net_init,
                                l2_reg=self.l2_reg, dropout=self.dropout)
         else:
             raise ValueError('model %s not available' % self.net_name)
