@@ -15,8 +15,18 @@
 
 * expose gdrdrv without privileged
   - https://gitlab.com/arm-research/smarter/smarter-device-manager
-  - kubectl apply -f gdrdrv-configmap.yaml 
-  - kubectl apply -f gdrdrv-daemonset.yaml 
+** label nodes
+   - kubectl label node tdmnode02 smarter-device-manager=enabled
+   - kubectl label node tdmnode03 smarter-device-manager=enabled
+** start service
+   - kubectl apply -f gdrdrv-configmap.yaml 
+   - kubectl apply -f gdrdrv-daemonset.yaml 
+
+* init/reset flannel pod-network
+- kubectl delete -f kube-flannel.yaml
+- curl https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml > kube-flannel.yaml
+- (change 10.244 -> 10.11 ?)
+- kubectl apply -f kube-flannel.yaml
 
 * NVIDIA device plugin for Kubernetes
 - https://github.com/NVIDIA/k8s-device-plugin
@@ -26,21 +36,19 @@
 - https://github.com/NVIDIA/gpu-feature-discovery
 - kubectl apply -f https://raw.githubusercontent.com/NVIDIA/gpu-feature-discovery/v0.5.0/deployments/static/nfd.yaml
 - kubectl apply -f https://raw.githubusercontent.com/NVIDIA/gpu-feature-discovery/v0.5.0/deployments/static/gpu-feature-discovery-daemonset.yaml
-- kubectl apply -f gpu-feature-discovery-job.yaml # (edited with hostname)
+- (?) kubectl apply -f gpu-feature-discovery-job.yaml # (edited with hostname)
 
 * get nodes
 - kubectl get nodes
 - kubectl get nodes --show-labels | less -S
 
-* init/reset flannel pod-network
-- kubectl delete -f kube-flannel.yaml
-- curl https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml > kube-flannel.yaml
-- (change 10.244 -> 10.11 ?)
-- kubectl apply -f kube-flannel.yaml
-
 * deploy mpi pods
-- kubectl apply -f mpi-service.yaml
-- kubectl apply -f mpi-2nodes_2gpu.yaml
+** label nodes
+   - kubectl label node tdmnode02 serv=mpi
+   - kubectl label node tdmnode03 serv=mpi
+** start service
+    - kubectl apply -f mpi-service.yaml
+    - kubectl apply -f mpi-2nodes_2gpu.yaml
 
 * pods (varia)
 - kubectl get pods -o wide
@@ -50,12 +58,19 @@
 * enter pod
 - kubectl exec -ti gio-mpi-double-0  -- fish
 
-* remove taint from tdmnode03
-- kubectl taint node tdmnode03 node-role.kubernetes.io/master:NoSchedule-
-
 * pod-node assignment
 - https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
 
 * mounting local path as volume
 - hostPath vs local :: https://kubernetes.io/docs/concepts/storage/volumes/
 
+* cluster setup
+  - on tdm03:
+    # kubeadm init --pod-network-cidr=10.11.0.0/16
+  - on tdm02:
+    # kubeadm join 156.148.70.73:6443 --token etc. etc.
+  - create ~/.kube
+  - check nodes
+    kubectl get nodes
+  - remove taint from tdmnode03
+    $ kubectl taint node tdmnode03 node-role.kubernetes.io/master:NoSchedule-
