@@ -152,6 +152,15 @@ USER $USER
 RUN sh utils/mnist_symlink.sh
 USER root
 
+
+## Install infiniband-diags (ibstat, etc.)
+RUN \
+    gpg --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC \
+    && gpg --export A4B469963BF863CC | apt-key add - \
+    && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update -y -q \
+    && apt-get install -y infiniband-diags rdmacm-utils
+
 # copy scripts and code
 COPY varia/bin /home/$USER/bin
 COPY opt_mpi /home/$USER/opt_mpi
