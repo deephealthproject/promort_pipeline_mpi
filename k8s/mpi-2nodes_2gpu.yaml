@@ -5,6 +5,7 @@ metadata:
   labels:
     app: mpi
 spec:
+  #hostNetwork: true   # test
   hostname: gio-mpi-double-0
   subdomain: mpi
   terminationGracePeriodSeconds: 0
@@ -29,9 +30,11 @@ spec:
         nvidia.com/gpu: 1
         ephemeral-storage: "5000Mi"
         smarter-devices/gdrdrv: 1
+        rdma/rdma_device: 2
       requests:
         cpu: 10
         smarter-devices/gdrdrv: 1
+        rdma/rdma_device: 2
     env:
       - name: NVIDIA_VISIBLE_DEVICES
         value: GPU-25f0d679-fc2d-ecb9-d9ca-42e85dfe2891,GPU-403e59bb-851c-76c9-ae40-0c2ed4737a4d
@@ -67,6 +70,7 @@ metadata:
   labels:
     app: mpi
 spec:
+  #hostNetwork: true   # test
   hostname: gio-mpi-double-1
   subdomain: mpi
   terminationGracePeriodSeconds: 0
@@ -91,9 +95,11 @@ spec:
         nvidia.com/gpu: 1
         ephemeral-storage: "5000Mi"
         smarter-devices/gdrdrv: 1
+        rdma/rdma_device: 2
       requests:
         cpu: 10
         smarter-devices/gdrdrv: 1
+        rdma/rdma_device: 2
     env:
       - name: NVIDIA_VISIBLE_DEVICES
         value: GPU-dcb14055-03ff-f78d-cf8a-649849a44617,GPU-da98a8ad-da83-adf6-82c5-d768416efe47
