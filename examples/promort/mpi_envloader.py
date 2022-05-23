@@ -91,9 +91,9 @@ class EnvLoader():
         in_shape = [3, self.size[0], self.size[1]]
         # set net init
         if (self.net_init=='HeNormal'):
-            net_init = eddl.HeNormal
+            net_init = 'he'
         elif (self.net_init=='GlorotNormal'):
-            net_init = eddl.GlorotNormal
+            net_init = 'glorot'
         else:
             raise ValueError('net_init can only be HeNormal or GlorotNormal')
         
