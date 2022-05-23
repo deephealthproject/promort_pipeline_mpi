@@ -1,9 +1,22 @@
 * cheat sheet
 - https://kubernetes.io/docs/reference/kubectl/cheatsheet/
 
-* disk pressure threashold
-- check/edit /etc/kubernetes/kubelet.env
-  KUBELET_ARGS="--cni-bin-dir=/usr/lib/cni --eviction-hard=nodefs.available<2Gi,nodefs.inodesFree<5%"
+* cluster setup
+  - on tdm03:
+    # kubeadm init --pod-network-cidr=10.11.0.0/16
+  - on tdm02:
+    # kubeadm join 156.148.70.73:6443 --token etc. etc.
+  - create ~/.kube
+  - check nodes
+    kubectl get nodes
+  - remove taint from tdmnode03
+    $ kubectl taint node tdmnode03 node-role.kubernetes.io/master:NoSchedule-
+
+* init/reset flannel pod-network
+- kubectl delete -f kube-flannel.yaml
+- curl https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml > kube-flannel.yaml
+- (change 10.244 -> 10.11 ?)
+- kubectl apply -f kube-flannel.yaml
 
 * adding gdrdrv module
 - sudo su -
@@ -14,19 +27,13 @@
   nvidia              34971648  279 nvidia_uvm,gdrdrv,nvidia_modeset
 
 * expose gdrdrv without privileged
-  - https://gitlab.com/arm-research/smarter/smarter-device-manager
+- https://gitlab.com/arm-research/smarter/smarter-device-manager
 ** label nodes
-   - kubectl label node tdmnode02 smarter-device-manager=enabled
-   - kubectl label node tdmnode03 smarter-device-manager=enabled
+- kubectl label node tdmnode02 smarter-device-manager=enabled
+- kubectl label node tdmnode03 smarter-device-manager=enabled
 ** start service
-   - kubectl apply -f gdrdrv-configmap.yaml 
-   - kubectl apply -f gdrdrv-daemonset.yaml 
-
-* init/reset flannel pod-network
-- kubectl delete -f kube-flannel.yaml
-- curl https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml > kube-flannel.yaml
-- (change 10.244 -> 10.11 ?)
-- kubectl apply -f kube-flannel.yaml
+- kubectl apply -f gdrdrv-configmap.yaml
+- kubectl apply -f gdrdrv-daemonset.yaml
 
 * NVIDIA device plugin for Kubernetes
 - https://github.com/NVIDIA/k8s-device-plugin
@@ -38,17 +45,25 @@
 - kubectl apply -f https://raw.githubusercontent.com/NVIDIA/gpu-feature-discovery/v0.5.0/deployments/static/gpu-feature-discovery-daemonset.yaml
 - (?) kubectl apply -f gpu-feature-discovery-job.yaml # (edited with hostname)
 
-* get nodes
-- kubectl get nodes
-- kubectl get nodes --show-labels | less -S
+* RoCE
+** label
+- kubectl label node tdmnode02 rdma-shared-dp-ds=enabled
+- kubectl label node tdmnode03 rdma-shared-dp-ds=enabled
+** apply service
+- kubectl apply -f k8s-rdma-shared-dev-plugin-config-map.yaml
+- kubectl apply -f k8s-rdma-shared-dev-plugin-ds.yaml
 
 * deploy mpi pods
 ** label nodes
-   - kubectl label node tdmnode02 serv=mpi
-   - kubectl label node tdmnode03 serv=mpi
+- kubectl label node tdmnode02 serv=mpi
+- kubectl label node tdmnode03 serv=mpi
 ** start service
-    - kubectl apply -f mpi-service.yaml
-    - kubectl apply -f mpi-2nodes_2gpu.yaml
+- kubectl apply -f mpi-service.yaml
+- kubectl apply -f mpi-2nodes_2gpu.yaml
+
+* get nodes
+- kubectl get nodes
+- kubectl get nodes --show-labels | less -S
 
 * pods (varia)
 - kubectl get pods -o wide
@@ -64,13 +79,9 @@
 * mounting local path as volume
 - hostPath vs local :: https://kubernetes.io/docs/concepts/storage/volumes/
 
-* cluster setup
-  - on tdm03:
-    # kubeadm init --pod-network-cidr=10.11.0.0/16
-  - on tdm02:
-    # kubeadm join 156.148.70.73:6443 --token etc. etc.
-  - create ~/.kube
-  - check nodes
-    kubectl get nodes
-  - remove taint from tdmnode03
-    $ kubectl taint node tdmnode03 node-role.kubernetes.io/master:NoSchedule-
+* disk pressure threashold
+- check/edit /etc/kubernetes/kubelet.env
+  KUBELET_ARGS="--cni-bin-dir=/usr/lib/cni --eviction-hard=nodefs.available<2Gi,nodefs.inodesFree<5%"
+
+* Login
+- sudo su - sgd_mpi -s /usr/bin/fish 
