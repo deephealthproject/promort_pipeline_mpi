@@ -34,7 +34,7 @@ spec:
         smarter-devices/gdrdrv: 1
     env:
       - name: NVIDIA_VISIBLE_DEVICES
-        value: GPU-25f0d679-fc2d-ecb9-d9ca-42e85dfe2891,GPU-dcb14055-03ff-f78d-cf8a-649849a44617
+        value: GPU-25f0d679-fc2d-ecb9-d9ca-42e85dfe2891,GPU-403e59bb-851c-76c9-ae40-0c2ed4737a4d
       - name: POD_IP
         valueFrom:
           fieldRef:
@@ -96,7 +96,7 @@ spec:
         smarter-devices/gdrdrv: 1
     env:
       - name: NVIDIA_VISIBLE_DEVICES
-        value: GPU-da98a8ad-da83-adf6-82c5-d768416efe47,GPU-403e59bb-851c-76c9-ae40-0c2ed4737a4d
+        value: GPU-dcb14055-03ff-f78d-cf8a-649849a44617,GPU-da98a8ad-da83-adf6-82c5-d768416efe47
       - name: POD_IP
         valueFrom:
           fieldRef:
