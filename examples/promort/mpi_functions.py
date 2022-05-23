@@ -16,6 +16,7 @@ import datetime
 def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir, save_weights, find_opt_lr=False):
     
     MP = el.MP
+    n_sync = MP.n_sync
     rank = MP.mpi_rank
     mpi_size = MP.mpi_size
 
@@ -119,10 +120,11 @@ def train(el, epochs, lr, gpus, dropout, l2_reg, seed, out_dir, save_weights, fi
             net_out = eddl.getOutput(net.layers[-1]).getdata() 
             loss = eddl.get_losses(net)[0]
             acc = eddl.get_metrics(net)[0]
-        
+            
             # Loss and accuracy synchronization among ranks
-            loss = MP.Gather_and_average(loss)
-            acc = MP.Gather_and_average(acc)
+            if b_index % n_sync == 0:
+                loss = MP.Gather_and_average(loss)
+                acc = MP.Gather_and_average(acc)
             
             if rank == 0:
                 msg = "Epoch {:d}/{:d} (batch {:d}/{:d}) - loss: {:.3f}, acc: {:.3f}".format(e + 1, epochs, b_index, tr_num_batches + 1, loss, acc)
