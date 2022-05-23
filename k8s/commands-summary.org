@@ -46,6 +46,7 @@
 - (?) kubectl apply -f gpu-feature-discovery-job.yaml # (edited with hostname)
 
 * RoCE
+- https://github.com/Mellanox/k8s-rdma-shared-dev-plugin
 ** label
 - kubectl label node tdmnode02 rdma-shared-dp-ds=enabled
 - kubectl label node tdmnode03 rdma-shared-dp-ds=enabled
