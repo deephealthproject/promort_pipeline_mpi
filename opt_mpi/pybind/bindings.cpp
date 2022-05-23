@@ -22,6 +22,7 @@ PYBIND11_MODULE(OPT_MPI, m) {
     
     py::class_<mpi_env>(m, "mpi_env")
        .def(py::init<int, int>(), py::arg("n_sync")=1, py::arg("bl")=512)
+       .def_readonly("n_sync", &mpi_env::n_sync)
        .def_readonly("mpi_rank", &mpi_env::mpi_rank)
        .def_readonly("mpi_size", &mpi_env::mpi_size)
        .def("Barrier", &mpi_env::Barrier)
