@@ -86,3 +86,10 @@
 
 * Login
 - sudo su - sgd_mpi -s /usr/bin/fish 
+
+* MPI command line
+- mpirun --mca pml ucx --map-by slot:pe=4 --bind-to core -n 4 --hostfile ./hostfile \
+  python3 mpi_training.py --cass-row-fn omnia_256.rows --cass-datatable promort.omnia_data_256 \
+  --batch-size 80 --gpu 1 --lr 1.0e-2 --sync-iterations 1 --epochs 100 \
+  --net resnet18_onnx --seed 1234 --out-dir ./
+
