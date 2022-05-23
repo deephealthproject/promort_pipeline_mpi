@@ -18,6 +18,6 @@ The **code** folder has the following sub-directories:
  * **opt_mpi**: The *cpp* sub-folder includes the code to implement mpi
    functionalities along with the extension of the SGD optimizer. The *pybind*
    sub-folder includes the code to create python bindings.
- * **promort-distributed**: Code of the distributed training of our use case.
+ * **promort_mpi**: Code of the distributed training of our use case.
  * **k8s**: Kubernetes configuration files used in our tests
  * **varia**: Auxiliary files used during the Docker build.  
