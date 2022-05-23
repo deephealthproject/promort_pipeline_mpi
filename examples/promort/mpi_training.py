@@ -63,7 +63,7 @@ def run(args):
                                    cass_row_fn, cass_datatable,
                                    net_name, size, num_classes, label,
                                    lr, gpus, net_init,
-                                   dropout, l2_reg, seed, init_weights_fn)
+                                   dropout, l2_reg, init_weights_fn, seed)
     
     rank = el.MP.mpi_rank
         
@@ -136,7 +136,7 @@ if __name__ == "__main__":
                         help='Activate data augmentations')
     parser.add_argument("--out-dir", metavar="DIR", default = './',
                         help="Specifies the output directory. If not set no output data is saved")
-    parser.add_argument("--init-weights-fn", metavar="DIR",
+    parser.add_argument("--init-weights-fn", metavar="DIR", default=None,
                         help="Filename of the .bin file with initial parameters of the network")
     parser.add_argument("--cass-row-fn", metavar="DIR", required=True,  help="Filename of cassandra rows file")
     parser.add_argument("--cass-datatable", metavar="DIR", required=True, help="Name of cassandra datatable")
