@@ -348,11 +348,11 @@ def get_net(net_name='vgg16', in_shape=[3,256,256], num_classes=2, full_mem=True
         mem = 'full_mem'
     else:
         mem = 'low_mem'
+    
+    net_init = eddl.HeNormal
 
     ### Get Network
-    if net_init == 'he':
-        net_init = eddl.HeNormal
-    elif net_init == 'glorot':
+    if net_init == 'glorot':
         net_init = eddl.GlorotNormal
 
     ## Network definition
